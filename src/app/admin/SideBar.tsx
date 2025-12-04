@@ -30,6 +30,7 @@ const navLinks: NavLink[] = [
   
   // Leaders
   { display: 'Leader', path: '/admin/leaders', icon: <i className="ri-user-star-line"></i>, category: 'operations' },
+  { display: 'Chat', path: '/admin/chat', icon: <i className="ri-message-3-line"></i>, category: 'operations' },
   // { display: 'Thanh toán', path: '/admin/payments', icon: <i className="ri-bank-card-line"></i>, category: 'operations' },
 ]
 

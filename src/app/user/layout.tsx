@@ -1,6 +1,7 @@
 import { Inter } from 'next/font/google';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import ChatBox from '@/components/ChatBox';
 import '@/styles/globals.css';
 
 const inter = Inter({
@@ -24,6 +25,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
           {children}
         </main>
         <Footer />
+        <ChatBox />
       </div>
     </div>
   );
