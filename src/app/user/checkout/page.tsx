@@ -67,7 +67,7 @@ export default function CheckoutPage() {
   });
   const [adults, setAdults] = React.useState(initAdults);
   const [children, setChildren] = React.useState(initChildren);
-  const [paymentMethod] = React.useState<"office-payment">("office-payment"); // chỉ 1 lựa chọn
+  const [paymentMethod, setPaymentMethod] = React.useState<"office-payment" | "vnpay-payment">("office-payment");
   const [errors, setErrors] = React.useState<
     Partial<Record<keyof typeof formData | "submit", string>>
   >({});
@@ -212,12 +212,13 @@ export default function CheckoutPage() {
       setSubmitting(true);
       const res = await createBooking(payload);
 
-      // Không có redirect vì "office", nhưng vẫn để phòng sau này có deposit
+      // Nếu có redirectUrl (VNPay, MoMo) thì chuyển hướng đến trang thanh toán
       if (res?.payment?.redirectUrl) {
         window.location.href = res.payment.redirectUrl;
         return;
       }
 
+      // Nếu thanh toán tại văn phòng thì chuyển hướng đến trang success
       if (res?.code) {
         const sp = new URLSearchParams();
         sp.append("bookingId", res.code);
@@ -258,7 +259,7 @@ export default function CheckoutPage() {
     );
 
   return (
-    <main className="mx-auto max-w-[1200px] px-4 py-10">
+    <main className="mx-auto max-w-[1200px] px-4 py-10" suppressHydrationWarning>
       {/* Banner mini + breadcrumb */}
       <motion.section
         initial={{ opacity: 0 }}
@@ -384,10 +385,13 @@ export default function CheckoutPage() {
             </label>
           </Card>
 
-          {/* Phương thức thanh toán (chỉ tại văn phòng) */}
+          {/* Phương thức thanh toán */}
           <Card>
             <h2 className="section-title mb-4">Phương thức thanh toán</h2>
-            <PayOfficeOnly />
+            <PaymentMethodSelector 
+              value={paymentMethod} 
+              onChange={setPaymentMethod} 
+            />
           </Card>
         </div>
 
@@ -536,7 +540,7 @@ function Field({
   error?: string;
 }) {
   return (
-    <label className="block">
+    <div className="block">
       <span className="block text-[13px] font-medium text-slate-600">
         {label}
       </span>
@@ -556,7 +560,7 @@ function Field({
           </motion.p>
         )}
       </AnimatePresence>
-    </label>
+    </div>
   );
 }
 function Row({
@@ -621,6 +625,17 @@ function Input({
   ...props
 }: React.InputHTMLAttributes<HTMLInputElement> & { icon?: React.ReactNode }) {
   const hasError = (props as any)["aria-invalid"];
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const [inputId, setInputId] = React.useState("");
+
+  React.useEffect(() => {
+    if (!props.id) {
+      setInputId(`input-${Date.now()}-${Math.floor(Math.random() * 1000)}`);
+    }
+  }, [props.id]);
+
+  const finalId = props.id || inputId;
+
   return (
     <div className="relative">
       {icon && (
@@ -630,6 +645,8 @@ function Input({
       )}
       <input
         {...props}
+        ref={inputRef}
+        id={finalId}
         className={`w-full rounded-xl border bg-white px-3 py-2 text-[15px] text-slate-800 placeholder:text-slate-400 shadow-sm transition focus-visible:outline-none focus-visible:ring-2 disabled:opacity-75 disabled:bg-slate-50 disabled:cursor-not-allowed ${
           icon ? "pl-10" : ""
         } ${
@@ -697,23 +714,78 @@ function StepButton({
     </button>
   );
 }
-function PayOfficeOnly() {
+function PaymentMethodSelector({
+  value,
+  onChange,
+}: {
+  value: "office-payment" | "vnpay-payment";
+  onChange: (value: "office-payment" | "vnpay-payment") => void;
+}) {
   return (
-    <label className="flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm transition border-emerald-500 bg-emerald-50/60 ring-1 ring-emerald-500">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/clients/assets/images/contact/icon.png"
-        alt=""
-        className="h-6 w-6 rounded object-cover"
-      />
-      <input
-        type="radio"
-        name="paymentMethod"
-        value="office-payment"
-        defaultChecked
-        className="h-4 w-4 border-slate-300 text-emerald-600 focus:ring-emerald-500"
-      />
-      <span className="font-medium text-slate-800">Tại văn phòng</span>
-    </label>
+    <div className="space-y-3">
+      {/* Thanh toán tại văn phòng */}
+      <label
+        className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm transition ${
+          value === "office-payment"
+            ? "border-emerald-500 bg-emerald-50/60 ring-1 ring-emerald-500"
+            : "border-slate-200 bg-white hover:border-slate-300"
+        }`}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/clients/assets/images/contact/icon.png"
+          alt=""
+          className="h-6 w-6 rounded object-cover"
+        />
+        <input
+          type="radio"
+          name="paymentMethod"
+          value="office-payment"
+          checked={value === "office-payment"}
+          onChange={() => onChange("office-payment")}
+          className="h-4 w-4 border-slate-300 text-emerald-600 focus:ring-emerald-500"
+        />
+        <span className="font-medium text-slate-800">Tại văn phòng</span>
+      </label>
+
+      {/* Thanh toán VNPay */}
+      <label
+        className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm transition ${
+          value === "vnpay-payment"
+            ? "border-emerald-500 bg-emerald-50/60 ring-1 ring-emerald-500"
+            : "border-slate-200 bg-white hover:border-slate-300"
+        }`}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="https://vnpay.vn/s1/statics.vnpay.vn/2023/9/06ncktiwd6dc1694418196384.png"
+          alt="VNPay"
+          className="h-6 w-auto rounded object-cover"
+        />
+        <input
+          type="radio"
+          name="paymentMethod"
+          value="vnpay-payment"
+          checked={value === "vnpay-payment"}
+          onChange={() => onChange("vnpay-payment")}
+          className="h-4 w-4 border-slate-300 text-emerald-600 focus:ring-emerald-500"
+        />
+        <span className="font-medium text-slate-800">VNPay</span>
+      </label>
+      
+      {value === "vnpay-payment" && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-sm text-slate-700"
+        >
+          <p className="font-medium text-blue-900 mb-1">Thanh toán qua VNPay</p>
+          <p className="text-blue-800">
+            Bạn sẽ được chuyển đến trang thanh toán VNPay để hoàn tất giao dịch.
+            Hỗ trợ các ngân hàng nội địa và thẻ quốc tế.
+          </p>
+        </motion.div>
+      )}
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 // import DisableInspect from '@/components/DisableInspect';
-import DisableCopyPaste from '@/components/DisableCopyPaste';
+// import DisableCopyPaste from '@/components/DisableCopyPaste';
 import '@/styles/globals.css';
 import { Inter } from 'next/font/google';
 
@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans bg-[var(--background)] text-[var(--foreground)]">
         <Providers>{children}</Providers>
         {/* <DisableInspect /> */}
-        <DisableCopyPaste/>
+        {/* <DisableCopyPaste/> */}
       </body>
     </html>
   );

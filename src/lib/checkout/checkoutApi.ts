@@ -1,7 +1,7 @@
 import axiosInstance from "@/lib/axiosInstance";
 
 /** ================= Types (khớp BE) ================= */
-export type PaymentMethod = "office-payment" | "paypal-payment" | "momo-payment" | "deposit";
+export type PaymentMethod = "office-payment" | "paypal-payment" | "momo-payment" | "vnpay-payment" | "deposit";
 
 export type CreateBookingBody = {
   tourId: string;
@@ -22,7 +22,7 @@ export type CreateBookingResponse = {
 export type MyBookingItem = {
   code: string;
   tourId: string;
-  tourTitle?: string;
+  tourTitle?: string | null;
   tourImage?: string | null;
   tourDestination?: string | null;
   time?: string | null;
@@ -54,38 +54,44 @@ function adaptCreateBooking(res: any): CreateBookingResponse {
   return {
     code: String(res?.booking?.code ?? res?.code ?? ""),
     status: (res?.booking?.bookingStatus ?? res?.status ?? "p") as any,
-    payment:
-      (res?.payUrl || res?.deeplink)
+    payment: res?.payment ?? 
+      (res?.payUrl || res?.deeplink
         ? { redirectUrl: res?.payUrl ?? res?.deeplink }
-        : res?.payment ?? null,
+        : null),
     total: Number(res?.booking?.totalPrice ?? res?.total ?? 0),
   };
 }
 
 function adaptMyBookings(res: any): MyBookingList {
   const rows = Array.isArray(res?.data) ? res.data : [];
-  const mapped = rows.map((b: any): MyBookingItem => ({
-    code: b.code,
-    tourId: String(b.tourId),
-    tourTitle: b.tour?.title ?? b.tourTitle,
-    tourImage: b.tour?.cover ?? b.tour?.images?.[0] ?? b.tourImage ?? null,
-    tourDestination: b.tour?.destination ?? b.destination ?? null,
-    time: b.tour?.time ?? null,
-    startDate: b.tour?.startDate ?? null,
-    endDate: b.tour?.endDate ?? null,
+  const mapped = rows.map((b: any): MyBookingItem => {
+    // Backend populates tourId as an object, not a string
+    const tour = typeof b.tourId === 'object' ? b.tourId : null;
+    const tourIdStr = typeof b.tourId === 'object' ? String(b.tourId?._id ?? '') : String(b.tourId ?? '');
+    
+    return {
+      code: b.code,
+      tourId: tourIdStr,
+      tourTitle: tour?.title ?? b.tourTitle ?? null,
+      tourImage: tour?.cover ?? tour?.images?.[0] ?? b.tourImage ?? null,
+      tourDestination: tour?.destination ?? b.destination ?? null,
+      time: tour?.time ?? null,
+      startDate: tour?.startDate ?? null,
+      endDate: tour?.endDate ?? null,
 
-    numAdults: Number(b.numAdults ?? 0),
-    numChildren: Number(b.numChildren ?? 0),
+      numAdults: Number(b.numAdults ?? 0),
+      numChildren: Number(b.numChildren ?? 0),
 
-    totalPrice: Number(b.totalPrice ?? 0),
-    paidAmount: Number(b.paidAmount ?? 0),
-    depositAmount: Number(b.depositAmount ?? 0),
-    depositPaid: Boolean(b.depositPaid),
-    requireFullPayment: Boolean(b.requireFullPayment),
+      totalPrice: Number(b.totalPrice ?? 0),
+      paidAmount: Number(b.paidAmount ?? 0),
+      depositAmount: Number(b.depositAmount ?? 0),
+      depositPaid: Boolean(b.depositPaid),
+      requireFullPayment: Boolean(b.requireFullPayment),
 
-    bookingStatus: b.bookingStatus ?? "p",
-    createdAt: b.createdAt,
-  }));
+      bookingStatus: b.bookingStatus ?? "p",
+      createdAt: b.createdAt,
+    };
+  });
   return {
     total: Number(res?.total ?? mapped.length),
     page: Number(res?.page ?? 1),
@@ -132,7 +138,25 @@ export async function createPaymentForBooking(
   );
   return data || {};
 }
+
 export async function initBookingPayment(code: string): Promise<{ payUrl?: string; deeplink?: string }> {
   const { data } = await axiosInstance.post(`/bookings/${encodeURIComponent(code)}/pay`, {});
   return data;
+}
+
+/** Create VNPay payment URL for existing booking */
+export async function createVNPayPayment(
+  code: string,
+  type: "deposit" | "remaining" = "remaining"
+): Promise<{ payUrl?: string; amount?: number }> {
+  const { data } = await axiosInstance.post("/payment/vnpay/create-payment", { code, type });
+  return data || {};
+}
+
+/** Create MoMo payment URL for remaining amount */
+export async function createMoMoPayment(
+  code: string
+): Promise<{ payUrl?: string; remain?: number }> {
+  const { data } = await axiosInstance.post("/payment/momo/create-remaining", { code });
+  return data || {};
 }

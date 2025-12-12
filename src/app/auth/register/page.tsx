@@ -127,9 +127,9 @@ export default function RegisterPage() {
         <p className="text-[var(--warning)] text-sm mb-3">{apiError}</p>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5 pt-5">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
+      <form onSubmit={handleSubmit} className="space-y-5 pt-5 pointer-events-auto">
+        <div className="grid grid-cols-2 gap-4 pointer-events-auto">
+          <div className="pointer-events-auto">
             <Input
               type="text"
               label="Họ và tên"
@@ -142,7 +142,7 @@ export default function RegisterPage() {
               <p className="text-[var(--warning)] text-sm">{errors.fullName}</p>
             )}
           </div>
-          <div>
+          <div className="pointer-events-auto">
             <Input
               type="text"
               label="User name"
@@ -157,8 +157,8 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
+        <div className="grid grid-cols-2 gap-4 pointer-events-auto">
+          <div className="pointer-events-auto">
             <Input
               type="email"
               label="Email"
@@ -171,7 +171,7 @@ export default function RegisterPage() {
               <p className="text-[var(--warning)] text-sm">{errors.email}</p>
             )}
           </div>
-          <div>
+          <div className="pointer-events-auto">
             <Input
               type="text"
               label="Số điện thoại"
@@ -186,7 +186,7 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <div className="relative">
+        <div className="relative pointer-events-auto">
           <Input
             type={showPassword ? "text" : "password"}
             label="Mật khẩu"
@@ -199,7 +199,7 @@ export default function RegisterPage() {
             type="button"
             aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 z-10 pointer-events-auto"
           >
             {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
           </button>
@@ -208,7 +208,7 @@ export default function RegisterPage() {
           )}
         </div>
 
-        <div className="relative">
+        <div className="relative pointer-events-auto">
           <Input
             type={showConfirmPassword ? "text" : "password"}
             label="Xác thực mật khẩu"
@@ -225,7 +225,7 @@ export default function RegisterPage() {
                 : "Hiện xác thực mật khẩu"
             }
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 z-10 pointer-events-auto"
           >
             {showConfirmPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
           </button>
@@ -236,16 +236,16 @@ export default function RegisterPage() {
           )}
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 pointer-events-auto">
           <input
             type="checkbox"
             id="terms"
             checked={agree}
             onChange={() => setAgree(!agree)}
-            className="w-4 h-4 rounded border-gray-300"
+            className="w-4 h-4 rounded border-gray-300 pointer-events-auto cursor-pointer"
             required
           />
-          <label htmlFor="terms" className="text-sm text-gray-600">
+          <label htmlFor="terms" className="text-sm text-gray-600 pointer-events-auto cursor-pointer">
             Tôi đã đọc các điều khoản và điều kiện
           </label>
         </div>
@@ -257,32 +257,33 @@ export default function RegisterPage() {
         <Button
           type="submit"
           variant="primary"
-          className="w-full mt-4"
+          className="w-full mt-4 pointer-events-auto"
           disabled={isPending}
         >
           {isPending ? "Đang đăng ký..." : "ĐĂNG KÝ"}
         </Button>
       </form>
 
-      <p className="text-sm mt-6 text-gray-600 text-center">
+      <p className="text-sm mt-6 text-gray-600 text-center pointer-events-auto">
         Bạn đã có tài khoản?{" "}
-        <a href="/auth/login" className="text-[var(--primary)] hover:underline">
+        <a href="/auth/login" className="text-[var(--primary)] hover:underline pointer-events-auto">
           Đăng nhập ngay
         </a>
       </p>
 
-      <div className="flex items-center gap-2 pt-5">
+      <div className="flex items-center gap-2 pt-5 pointer-events-auto">
         <hr className="flex-1 border-gray-300" />
         <span className="text-gray-500 text-sm">Hoặc đăng ký bằng</span>
         <hr className="flex-1 border-gray-300" />
       </div>
 
-      <div className="flex justify-center mt-8 space-x-4">
+      <div className="flex justify-center mt-8 space-x-4 pointer-events-auto">
         <Button
           variant="outline-primary"
           type="button"
           aria-label="Đăng ký bằng Facebook"
           onClick={() => startOAuth("facebook")}
+          className="pointer-events-auto"
         >
           <FaFacebookF className="text-[var(--primary)] text-xl" />
         </Button>
@@ -292,6 +293,7 @@ export default function RegisterPage() {
           type="button"
           aria-label="Đăng ký bằng Google"
           onClick={() => startOAuth("google")}
+          className="pointer-events-auto"
         >
           <FcGoogle className="text-xl" />
         </Button>
@@ -301,6 +303,7 @@ export default function RegisterPage() {
           type="button"
           aria-label="Đăng ký bằng Apple"
           onClick={() => startOAuth("apple")}
+          className="pointer-events-auto"
         >
           <FaApple className="text-black text-xl" />
         </Button>

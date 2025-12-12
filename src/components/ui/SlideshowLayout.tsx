@@ -30,11 +30,11 @@ export default function SlideshowLayout({
       <div className="absolute w-[500px] h-[500px] bg-[var(--secondary)] opacity-50 blur-[250px]" style={{ top: "650px", left: "1160px" }} />
 
       {/* Layout chính */}
-      <div className="w-full px-8 lg:px-12 xl:px-20 2xl:px-30">
+      <div className="w-full px-8 lg:px-12 xl:px-20 2xl:px-30 relative z-10">
         <div className="flex w-full flex-col md:flex-row">
           {/* Cột form */}
           <div
-            className={`flex-1 flex flex-col justify-center items-center ${
+            className={`flex-1 flex flex-col justify-center items-center relative z-10 ${
               reverse ? "order-2 md:ml-8" : "order-1 md:mr-8"
             }`}
           >

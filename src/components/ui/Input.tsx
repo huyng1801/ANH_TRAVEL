@@ -9,6 +9,8 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   labelClassName?: string;
 }
 
+let inputIdCounter = 0;
+
 const Input = ({
   status = 'default',
   label,
@@ -18,12 +20,21 @@ const Input = ({
   id,
   ...props
 }: InputProps) => {
-  const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+  const [inputId, setInputId] = React.useState<string>(id || '');
+
+  React.useEffect(() => {
+    if (!id && !inputId) {
+      inputIdCounter++;
+      setInputId(`input-${inputIdCounter}`);
+    }
+  }, [id, inputId]);
+
+  const finalId = id || inputId;
 
   return (
     <div className="relative w-full">
       <input
-        id={inputId}
+        id={finalId}
         placeholder=" " // bắt buộc phải có để label hoạt động đúng
         className={classNames(
           'input peer placeholder-transparent',
@@ -37,8 +48,8 @@ const Input = ({
         {...props}
       />
 
-      {label && (
-        <label htmlFor={inputId} className={classNames("floating-label", labelClassName)}>
+      {label && finalId && (
+        <label htmlFor={finalId} className={classNames("floating-label", labelClassName)}>
           {label}
         </label>
       )}

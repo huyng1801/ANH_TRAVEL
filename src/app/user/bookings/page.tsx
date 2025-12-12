@@ -3,6 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Calendar,
   MapPin,
@@ -13,13 +14,13 @@ import {
   XCircle,
   CheckCircle2,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import {
   useMyBookings,
   useCancelBooking,
 } from "#/hooks/bookings-hook/useBooking";
 import {
-  pickBookingImage,
   formatVND,
   fmtDate,
   StatusChip,
@@ -37,6 +38,20 @@ const tabs: { key: BookingTab; label: string }[] = [
 ];
 
 export default function MyBookingsPage() {
+  // Check for payment status from URL
+  const searchParams = useSearchParams();
+  const paymentStatus = searchParams.get("status");
+  const bookingCode = searchParams.get("code");
+  const [showNotification, setShowNotification] = React.useState(!!paymentStatus);
+  
+  // Auto-hide notification after 5 seconds
+  React.useEffect(() => {
+    if (paymentStatus) {
+      const timer = setTimeout(() => setShowNotification(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [paymentStatus]);
+
   // data
   const { data, isLoading, isError, refetch } = useMyBookings();
   const cancelMut = useCancelBooking({
@@ -44,7 +59,10 @@ export default function MyBookingsPage() {
   });
 
   const [activeTab, setActiveTab] = React.useState<BookingTab>("all");
-  const list: any[] = Array.isArray(data?.data) ? data!.data : data ?? [];
+  
+  const list = React.useMemo(() => {
+    return Array.isArray(data?.data) ? data.data : [];
+  }, [data]);
 
   const filtered = React.useMemo(() => {
     if (activeTab === "all") return list;
@@ -53,6 +71,56 @@ export default function MyBookingsPage() {
 
   return (
     <div className="mx-auto w-[92%] max-w-6xl py-8">
+      {/* Payment Notification */}
+      <AnimatePresence>
+        {showNotification && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`mb-6 rounded-xl border p-4 ${
+              paymentStatus === "success"
+                ? "border-emerald-200 bg-emerald-50"
+                : "border-rose-200 bg-rose-50"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              {paymentStatus === "success" ? (
+                <CheckCircle2 className="h-6 w-6 text-emerald-600 flex-shrink-0" />
+              ) : (
+                <XCircle className="h-6 w-6 text-rose-600 flex-shrink-0" />
+              )}
+              <div className="flex-1">
+                <p className={`font-semibold ${
+                  paymentStatus === "success" ? "text-emerald-900" : "text-rose-900"
+                }`}>
+                  {paymentStatus === "success"
+                    ? "Thanh toán thành công!"
+                    : "Thanh toán thất bại"}
+                </p>
+                <p className={`text-sm mt-1 ${
+                  paymentStatus === "success" ? "text-emerald-700" : "text-rose-700"
+                }`}>
+                  {paymentStatus === "success"
+                    ? `Đơn đặt chỗ ${bookingCode || ""} đã được thanh toán thành công. Chúng tôi đã gửi email xác nhận.`
+                    : "Có lỗi xảy ra trong quá trình thanh toán. Vui lòng thử lại."}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowNotification(false)}
+                className={`text-sm font-medium ${
+                  paymentStatus === "success"
+                    ? "text-emerald-600 hover:text-emerald-800"
+                    : "text-rose-600 hover:text-rose-800"
+                }`}
+              >
+                Đóng
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header giống trang Cài đặt */}
       <div className="mb-6">
         <h1 className="text-[28px] font-bold tracking-tight">
@@ -110,18 +178,6 @@ export default function MyBookingsPage() {
     </div>
   );
 }
-const pickTourImage = (t: any): string => {
-  const imgs = Array.isArray(t?.images) ? t.images.filter(Boolean) : [];
-  if (imgs.length > 0) {
-    const seed = String(t?._id ?? t?.id ?? t?.title ?? "");
-    let hash = 0;
-    for (let i = 0; i < seed.length; i++)
-      hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-    return imgs[hash % imgs.length];
-  }
-  return t?.image ?? t?.cover ?? "/hot1.jpg"; // Đây là ảnh default của bạn
-};
-
 /* ---------- 1 item booking (giống card ở trang Cài đặt) ---------- */
 function BookingRow({
   booking,
@@ -131,24 +187,22 @@ function BookingRow({
   onCancel: () => void;
 }) {
   const status = classifyBooking(booking);
-  const tour: any =
-    (booking?.tourId && typeof booking.tourId === "object"
-      ? booking.tourId
-      : null) ??
-    (booking?.tour && typeof booking.tour === "object" ? booking.tour : null) ??
-    {};
-  const title = tour?.title ?? "Tour";
-  const image = pickTourImage(tour);
-  console.log("--- FINAL TOUR OBJECT IN BOOKINGROW ---", tour);
+  
+  // Extract tour data from adapted booking item
+  const title = booking?.tourTitle || "Tour";
+  const image = booking?.tourImage || "/hot1.jpg";
+  const destination = booking?.tourDestination || "Điểm đến";
+  const time = booking?.time || "Thời lượng tuỳ tour";
+  const startDate = booking?.startDate ? fmtDate(booking.startDate) : "Thời gian linh hoạt";
+  const endDate = booking?.endDate ? fmtDate(booking.endDate) : "";
+  
   const total = Number(booking?.totalPrice || 0);
   const paid = Number(booking?.paidAmount || 0);
   const remain = Math.max(0, total - paid);
   const guests =
     Number(booking?.numAdults || 0) + Number(booking?.numChildren || 0);
-  const start = tour?.startDate
-    ? fmtDate(tour.startDate)
-    : "Thời gian linh hoạt";
   const code = String(booking?.code ?? booking?.bookingCode ?? "");
+  const tourId = String(booking?.tourId ?? "");
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -215,34 +269,32 @@ function BookingRow({
             />
             <InfoPill
               icon={<MapPin size={16} />}
-              text={tour?.destination ?? "Điểm đến"}
+              text={destination}
             />
-            <InfoPill icon={<Calendar size={16} />} text={start} />
+            <InfoPill icon={<Calendar size={16} />} text={startDate} />
             <InfoPill
               icon={<Clock size={16} />}
-              text={tour?.time ?? "Thời lượng tuỳ tour"}
+              text={time}
             />
           </div>
 
           {/* actions */}
           <div className="mt-1 flex flex-wrap items-center gap-10">
-            <Link
-              href={`/user/destination/${tour?.destinationSlug ?? ""}/${
-                tour?._id ?? ""
-              }`}
-              className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-800 shadow-sm transition hover:border-emerald-500 hover:text-emerald-600"
-            >
-              Xem tour
-            </Link>
+            {tourId && (
+              <Link
+                href={`/user/destination/${destination?.toLowerCase().replace(/\s+/g, "-")}/${tourId}`}
+                className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-800 shadow-sm transition hover:border-emerald-500 hover:text-emerald-600"
+              >
+                Xem tour
+              </Link>
+            )}
 
             <div className="ml-auto flex items-center gap-8">
               {/* Thanh toán cọc / đủ — chỉ khi đang chờ hoặc sắp khởi hành */}
               {(status === "pending" || status === "upcoming") &&
-                remain > 0 && (
+                remain > 0 && tourId && (
                   <Link
-                    href={`/user/checkout?id=${
-                      tour?._id ?? booking?.tourId ?? ""
-                    }`}
+                    href={`/user/checkout?id=${tourId}`}
                     className="inline-flex items-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
                   >
                     {status === "pending" ? "Thanh toán cọc" : "Thanh toán"}
